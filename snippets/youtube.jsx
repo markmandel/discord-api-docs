@@ -90,16 +90,18 @@ export const YouTubeEmbed = ({
       ></iframe>
       {(showDuration || parsedChapters.length > 0) && (
         <div className="mt-2 flex items-start justify-between gap-4 text-sm text-gray-500 dark:text-zinc-500">
-          {showDuration && duration !== null && <p>Duration: {formatDuration(duration)}</p>}
+          {showDuration && duration !== null && (
+            <p className="m-0">Duration: {formatDuration(duration)}</p>
+          )}
           {parsedChapters.length > 0 && (
             <details className="ml-auto text-right">
               <summary className="cursor-pointer select-none">Chapters</summary>
-              <ul className="mt-2 space-y-1 text-left">
+              <ul className="mt-2 mb-0 list-none pl-0 text-left">
                 {parsedChapters.map((chapter) => (
-                  <li key={chapter.seconds}>
+                  <li key={chapter.seconds} className="m-0 pl-0">
                     <button
                       type="button"
-                      className="cursor-pointer hover:text-gray-700 dark:hover:text-zinc-300"
+                      className="cursor-pointer py-0.5 hover:text-gray-700 dark:hover:text-zinc-300"
                       onClick={() => seekTo(chapter.seconds)}
                     >
                       <span className="font-medium text-primary dark:text-primary-light">
