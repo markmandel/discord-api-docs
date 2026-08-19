@@ -5,6 +5,7 @@ export const YouTubeEmbed = ({
   chapters = "",
 }) => {
   const iframeRef = useRef(null);
+  const detailsRef = useRef(null);
   const [duration, setDuration] = useState(null);
 
   // Chapters are pasted verbatim from the video description, one chapter per
@@ -30,6 +31,18 @@ export const YouTubeEmbed = ({
   }, [chapters]);
 
   const jsApiEnabled = showDuration || parsedChapters.length > 0;
+
+  // The chapter list overlays the page like a menu, so close it on any
+  // click/tap outside of it.
+  useEffect(() => {
+    if (parsedChapters.length === 0) return;
+    const onPointerDown = (event) => {
+      const details = detailsRef.current;
+      if (details?.open && !details.contains(event.target)) details.open = false;
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [parsedChapters.length]);
 
   useEffect(() => {
     if (!showDuration) return;
@@ -89,17 +102,20 @@ export const YouTubeEmbed = ({
         onLoad={showDuration ? handleLoad : undefined}
       ></iframe>
       {(showDuration || parsedChapters.length > 0) && (
-        <div className="mt-2 flex items-start justify-between gap-4 text-sm text-gray-500 dark:text-zinc-500">
+        <div className="relative mt-2 flex items-start justify-between gap-4 text-sm text-gray-500 dark:text-zinc-500">
           {parsedChapters.length > 0 && (
-            <details>
+            <details ref={detailsRef}>
               <summary className="cursor-pointer select-none">Chapters</summary>
-              <ul className="mt-2 mb-0 list-none pl-0 text-left">
+              <ul className="absolute left-0 top-full z-10 mt-1 mb-0 max-h-72 w-max max-w-full list-none overflow-y-auto rounded-xl border border-gray-200 bg-white p-3 pl-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
                 {parsedChapters.map((chapter) => (
                   <li key={chapter.seconds} className="m-0 pl-0">
                     <button
                       type="button"
                       className="cursor-pointer py-0.5 text-left hover:text-gray-700 dark:hover:text-zinc-300"
-                      onClick={() => seekTo(chapter.seconds)}
+                      onClick={() => {
+                        seekTo(chapter.seconds);
+                        if (detailsRef.current) detailsRef.current.open = false;
+                      }}
                     >
                       <span className="font-medium text-primary dark:text-primary-light">
                         {chapter.label}
