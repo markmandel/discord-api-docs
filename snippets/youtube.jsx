@@ -7,6 +7,7 @@ export const YouTubeEmbed = ({
   const iframeRef = useRef(null);
   const detailsRef = useRef(null);
   const [duration, setDuration] = useState(null);
+  const [activeChapter, setActiveChapter] = useState(-1);
 
   // Chapters are pasted verbatim from the video description, one chapter per
   // line. Tolerates the formats descriptions use in the wild: "0:00 Title",
@@ -45,7 +46,7 @@ export const YouTubeEmbed = ({
   }, [parsedChapters.length]);
 
   useEffect(() => {
-    if (!showDuration) return;
+    if (!jsApiEnabled) return;
     const onMessage = (event) => {
       if (event.origin !== "https://www.youtube.com") return;
       if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
@@ -57,10 +58,18 @@ export const YouTubeEmbed = ({
       }
       const seconds = data?.info?.duration;
       if (typeof seconds === "number" && seconds > 0) setDuration(seconds);
+      const currentTime = data?.info?.currentTime;
+      if (typeof currentTime === "number" && parsedChapters.length > 0) {
+        let index = -1;
+        for (let i = 0; i < parsedChapters.length; i++) {
+          if (parsedChapters[i].seconds <= currentTime) index = i;
+        }
+        setActiveChapter(index);
+      }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [showDuration]);
+  }, [jsApiEnabled, parsedChapters]);
 
   const postToPlayer = (payload) => {
     iframeRef.current?.contentWindow?.postMessage(
@@ -99,7 +108,7 @@ export const YouTubeEmbed = ({
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         referrerPolicy="strict-origin-when-cross-origin"
         allowFullScreen
-        onLoad={showDuration ? handleLoad : undefined}
+        onLoad={jsApiEnabled ? handleLoad : undefined}
       ></iframe>
       {(showDuration || parsedChapters.length > 0) && (
         <div className="relative mt-2 flex items-start justify-between gap-4 text-sm text-gray-500 dark:text-zinc-500">
@@ -107,11 +116,15 @@ export const YouTubeEmbed = ({
             <details ref={detailsRef}>
               <summary className="cursor-pointer select-none">Chapters</summary>
               <ul className="absolute left-0 top-full z-10 mt-1 mb-0 max-h-72 w-max max-w-full list-none overflow-y-auto rounded-xl border border-gray-200 bg-white p-3 pl-3 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                {parsedChapters.map((chapter) => (
+                {parsedChapters.map((chapter, index) => (
                   <li key={chapter.seconds} className="m-0 pl-0">
                     <button
                       type="button"
-                      className="cursor-pointer py-0.5 text-left hover:text-gray-700 dark:hover:text-zinc-300"
+                      className={`cursor-pointer rounded-md px-1.5 py-0.5 text-left hover:text-gray-700 dark:hover:text-zinc-300 ${
+                        index === activeChapter
+                          ? "bg-gray-100 text-gray-800 dark:bg-zinc-700 dark:text-zinc-200"
+                          : ""
+                      }`}
                       onClick={() => {
                         seekTo(chapter.seconds);
                         if (detailsRef.current) detailsRef.current.open = false;
