@@ -230,21 +230,21 @@ export const YouTubePlaylistCarousel = ({ list, description = "", videos = null 
           </>
         )}
       </div>
-      <p className="yt-carousel-footer">
-        <a href={playlistUrl} target="_blank" rel="noreferrer">
-          View the full playlist
-        </a>
-        {channel && (
-          <>
-            {" "}
-            · by{" "}
-            <a href={channel.url} target="_blank" rel="noreferrer">
-              {channel.name}
-            </a>{" "}
-            on YouTube
-          </>
-        )}
-      </p>
+      {channel && (
+        <div className="yt-carousel-footer">
+          <a
+            className="yt-carousel-subscribe"
+            href={`${channel.url}?sub_confirmation=1`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+              <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31.4 31.4 0 0 0 0 12c0 1.9.2 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1c.3-1.9.5-3.9.5-5.8s-.2-3.9-.5-5.8zM9.6 15.6V8.4l6.2 3.6-6.2 3.6z" />
+            </svg>
+            Subscribe to {channel.name}
+          </a>
+        </div>
+      )}
     </div>
   );
 };
