@@ -19,6 +19,7 @@ export const YouTubePlaylistCarousel = ({ list, description = "", videos = null 
   const playerRef = useRef(null);
   const trackRef = useRef(null);
   const [videoIds, setVideoIds] = useState(pinnedVideos || []);
+  const [playing, setPlaying] = useState(new Set());
   const [channel, setChannel] = useState(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(true);
@@ -123,29 +124,52 @@ export const YouTubePlaylistCarousel = ({ list, description = "", videos = null 
       {description && <p className="yt-carousel-description">{description}</p>}
       <div className="yt-carousel-viewport">
         <div className="yt-carousel-track" ref={trackRef} onScroll={updateArrows}>
-          <div className="yt-carousel-slide">
-            <iframe
-              ref={playerRef}
-              src={`https://www.youtube.com/embed/videoseries?list=${playlistId}&enablejsapi=1`}
-              title="YouTube playlist player"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-              onLoad={handlePlayerLoad}
-            ></iframe>
-          </div>
-          {videoIds.slice(1).map((videoId) => (
-            <div className="yt-carousel-slide" key={videoId}>
+          {videoIds.length === 0 && (
+            <div className="yt-carousel-slide">
               <iframe
-                src={`https://www.youtube.com/embed/${videoId}`}
-                title="YouTube video player"
-                loading="lazy"
+                ref={playerRef}
+                src={`https://www.youtube.com/embed/videoseries?list=${playlistId}&enablejsapi=1`}
+                title="YouTube playlist player"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
+                onLoad={handlePlayerLoad}
               ></iframe>
             </div>
-          ))}
+          )}
+          {videoIds.map((videoId) =>
+            playing.has(videoId) ? (
+              <div className="yt-carousel-slide" key={videoId}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+                  title="YouTube video player"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            ) : (
+              <div className="yt-carousel-slide" key={videoId}>
+                <button
+                  type="button"
+                  className="yt-carousel-thumb"
+                  aria-label="Play video"
+                  onClick={() => setPlaying((previous) => new Set(previous).add(videoId))}
+                >
+                  <img
+                    src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
+                    alt=""
+                    loading="lazy"
+                  />
+                  <span className="yt-carousel-play" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                      <path d="M8 5.5v13l11-6.5z" />
+                    </svg>
+                  </span>
+                </button>
+              </div>
+            )
+          )}
         </div>
         {!(atStart && atEnd) && (
           <>
