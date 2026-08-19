@@ -17,6 +17,7 @@ export const YouTubePlaylistCarousel = ({ list, description = "", videos = null 
   }, [videos]);
 
   const playerRef = useRef(null);
+  const playingRefs = useRef({});
   const trackRef = useRef(null);
   const [videoIds, setVideoIds] = useState(pinnedVideos || []);
   const [playing, setPlaying] = useState(new Set());
@@ -94,6 +95,28 @@ export const YouTubePlaylistCarousel = ({ list, description = "", videos = null 
     return () => window.removeEventListener("message", onMessage);
   }, [playlistId, pinnedVideos]);
 
+  const pauseAll = (exceptVideoId) => {
+    const pause = (iframe) =>
+      iframe?.contentWindow?.postMessage(
+        JSON.stringify({ event: "command", func: "pauseVideo", args: [] }),
+        "https://www.youtube.com"
+      );
+    Object.entries(playingRefs.current).forEach(([videoId, iframe]) => {
+      if (videoId !== exceptVideoId) pause(iframe);
+    });
+    pause(playerRef.current);
+  };
+
+  // If the page is backgrounded — e.g. the viewer clicked "Watch on YouTube",
+  // which opens a new tab — pause everything so audio doesn't play doubled.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.hidden) pauseAll();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
+
   const handlePlayerLoad = () => {
     playerRef.current?.contentWindow?.postMessage(
       JSON.stringify({ event: "listening", id: "ytplaylist", channel: "widget" }),
@@ -115,15 +138,21 @@ export const YouTubePlaylistCarousel = ({ list, description = "", videos = null 
   }, [videoIds]);
 
   const scrollByPage = (direction) => {
+    pauseAll();
     const track = trackRef.current;
     track?.scrollBy({ left: direction * track.clientWidth, behavior: "smooth" });
+  };
+
+  const handleTrackScroll = () => {
+    updateArrows();
+    pauseAll();
   };
 
   return (
     <div className="yt-carousel">
       {description && <p className="yt-carousel-description">{description}</p>}
       <div className="yt-carousel-viewport">
-        <div className="yt-carousel-track" ref={trackRef} onScroll={updateArrows}>
+        <div className="yt-carousel-track" ref={trackRef} onScroll={handleTrackScroll}>
           {videoIds.length === 0 && (
             <div className="yt-carousel-slide">
               <iframe
@@ -141,7 +170,11 @@ export const YouTubePlaylistCarousel = ({ list, description = "", videos = null 
             playing.has(videoId) ? (
               <div className="yt-carousel-slide" key={videoId}>
                 <iframe
-                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+                  ref={(element) => {
+                    if (element) playingRefs.current[videoId] = element;
+                    else delete playingRefs.current[videoId];
+                  }}
+                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`}
                   title="YouTube video player"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   referrerPolicy="strict-origin-when-cross-origin"
@@ -154,7 +187,10 @@ export const YouTubePlaylistCarousel = ({ list, description = "", videos = null 
                   type="button"
                   className="yt-carousel-thumb"
                   aria-label="Play video"
-                  onClick={() => setPlaying((previous) => new Set(previous).add(videoId))}
+                  onClick={() => {
+                    pauseAll(videoId);
+                    setPlaying((previous) => new Set(previous).add(videoId));
+                  }}
                 >
                   <img
                     src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`}
