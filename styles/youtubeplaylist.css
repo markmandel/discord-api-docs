@@ -169,3 +169,11 @@
     background-color: var(--brand-560, var(--brand-500));
     filter: brightness(1.1);
 }
+
+/* Below 640px the carousel is one slide per view; match the button to it. */
+@media (max-width: 639.98px) {
+    .yt-carousel-subscribe {
+        width: 100%;
+        justify-content: center;
+    }
+}
